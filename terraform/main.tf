@@ -3,6 +3,7 @@ locals {
   general_namespace     = join("-", [var.org_name, var.team_name, var.project_id])
   s3_bucket_namespace   = join("-", [var.org_name, var.team_name, var.project_id, var.env["dev"]])
 }
+
 data "aws_caller_identity" "current" {}
 module "codepipeline" {
   source                 = "./modules/codepipeline"
@@ -45,6 +46,7 @@ module "codepipeline" {
   ]
 }
 
+
 module "codecommit" {
   source            = "./modules/codecommit"
   general_namespace = local.general_namespace
@@ -56,9 +58,12 @@ module "ecr" {
   source            = "./modules/ecr"
   general_namespace = local.general_namespace
   env_namespace     = local.env_namespace
+  default_region    = var.region
+  account_id        = data.aws_caller_identity.current.account_id
 }
 
 module "lambda" {
+  depends_on = [module.ecr] # After completion of module.ecr
   source = "./modules/lambda"
   env_namespace = local.env_namespace
   ecr_repo_arn = module.ecr.ecr_configs.ecr_repo_arn

@@ -64,8 +64,7 @@ resource "aws_codepipeline" "codepipeline" {
       owner    = "AWS"
       provider = "CodeCommit"
       version  = "1"
-      output_artifacts = [
-      "source_output"]
+      output_artifacts = ["source_output"]
 
       configuration = {
         BranchName      = var.codecommit_branch

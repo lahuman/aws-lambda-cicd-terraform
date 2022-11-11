@@ -4,3 +4,9 @@ variable "general_namespace" {
 variable "env_namespace" {
     type = string
 }
+variable "default_region" {
+    type = string
+}
+variable "account_id" {
+    type = string
+}
