@@ -9,12 +9,12 @@
 
 ## Prerequiste 
 
-- [AWS Cli](https://aws.amazon.com/cli/)installed
-- [Terraform Cli](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli) installed 
+- [AWS Cli](https://aws.amazon.com/cli/)
+- [Terraform Cli](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)  
 
 ## Features
 
-- AWS Lambda Function - bs4를 홀용해서 https://lahuman.github.io 의 title 을 출력
+- AWS Lambda Function - [bs4](https://pypi.org/project/beautifulsoup4/)를 활용해서 https://lahuman.github.io 의 title 을 출력
 - CI/CD - Complete CodePipeline: [CodeCommit](https://aws.amazon.com/codecommit/), Source, Build, Deploy
 - Private [Elastic Container Registry](https://aws.amazon.com/ecr/) for your AWS Lambda Code
 
@@ -23,7 +23,7 @@
 프로젝트 Clone 처리
 
 ```sh
-git clone https://gitlab.com/shinphil/aws-lambda-cicd-terraform.git
+git clone https://github.com/lahuman/aws-lambda-cicd-terraform.git
 cd aws-lambda-cicd-terraform/terraform
 ```
 
