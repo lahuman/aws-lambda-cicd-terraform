@@ -11,6 +11,7 @@
 
 - [AWS Cli](https://aws.amazon.com/cli/)
 - [Terraform Cli](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)  
+- [docker](https://docs.docker.com/engine/install/)
 
 ## Features
 
@@ -34,34 +35,18 @@ cd aws-lambda-cicd-terraform/terraform
 - project_id = "PROJECT_ID"
 - region     = "REGION"
 
+`providers.tf` 에서도 region을 `terraform.tfvars`과 동일하게 변경 처리
+
+- region     = "REGION"
+
 ```sh
 terraform init
 terraform apply
 
-# * 오류 발생
-# ECR에 LAMBDA에 배포할 초기 이미지가 없어서 오류 발생 
-
-```
-### 오류 발생 내용
-
-![](/assets/terraform-apply-error.png)
-
-```bash
-# TODO : 자동화 처리 필요
-aws ecr get-login-password --region ${REGION} | podman login --username AWS --password-stdin  ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com
- 
-# LAMBDA에서 사용할 기본 이미지 가져오기
-podman pull public.ecr.aws/lambda/python:3.8  
-
-# 기본 이미지 명명 변경
-podman tag public.ecr.aws/lambda/python:3.8  ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/kklim-batch-test_test_docker_repo:latest
-
-# PUSH
-podman push ${ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/kklim-batch-test_test_docker_repo:latest
-
-# 재실행
-terraform apply
-
+# 성공 메시지
+....
+Apply complete! Resources: 15 added, 0 changed, 0 destroyed.
+....
 ```
 
 ### 초기 이미지 push 후 ECR 
@@ -123,6 +108,81 @@ git push
 - https://github.com/aws-samples/codepipeline-for-lambda-using-terraform
 - https://www.maxivanov.io/deploy-aws-lambda-to-vpc-with-terraform/
 
+## ## 2022.11.12 변경 내역
+
+- module 간 의존성 추가 처리
+
+```
+module "ecr" {
+  source            = "./modules/ecr"
+  general_namespace = local.general_namespace
+  env_namespace     = local.env_namespace
+  default_region    = var.region
+  account_id        = data.aws_caller_identity.current.account_id
+}
+
+module "lambda" {
+  # 이부분을 추가 
+  depends_on = [module.ecr] # After completion of module.ecr
+  source = "./modules/lambda"
+  env_namespace = local.env_namespace
+  ecr_repo_arn = module.ecr.ecr_configs.ecr_repo_arn
+  ecr_repo_url = module.ecr.ecr_configs.ecr_repo_url
+}
+
+# ./module/lambda/main.tf 에 sleep 삭제 처리
+# ecr을 생성하고 docker image를 업로드 하는데 약 30초의 시간이 걸립니다. 이를 기다리게 하기 위해서 time_sleep를 사용하였습니다
+# 더 좋은 방법이 있을꺼 같은데 찾아봐야겠습니다.
+resource "null_resource" "previous" {}
+# sleep 40 seconds
+resource "time_sleep" "wait_40_seconds" {
+  depends_on = [null_resource.previous]
+  create_duration = "40s"
+}
+
+resource "aws_lambda_function" "this" {
+    depends_on = [time_sleep.wait_40_seconds]
+    .....
+}
+```
+## 2022.11.11 변경 내역
+- local-exec로 초기 이미지 push 처리
+```
+# ./module/ecr/main.tf 에서 
+# local-exec 의 의미가 현재 terraform 을 실행하는 머신에서 실행한다는 의미 입니다.
+
+resource "null_resource" "docker_build" { 
+  # on Terraform Running Machine
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"] 
+    command = <<-EOT
+      aws ecr get-login-password --region ${var.default_region} | docker login --username AWS --password-stdin ${var.account_id}.dkr.ecr.${var.default_region}.amazonaws.com
+      docker pull public.ecr.aws/lambda/python:3.8
+      docker tag public.ecr.aws/lambda/python:3.8 ${var.account_id}.dkr.ecr.${var.default_region}.amazonaws.com/${var.general_namespace}_test_docker_repo:latest
+      docker push ${var.account_id}.dkr.ecr.${var.default_region}.amazonaws.com/${var.general_namespace}_test_docker_repo:latest
+      EOT
+  }
+}
+
+# ./module/lambda/main.tf
+# ecr을 생성하고 docker image를 업로드 하는데 약 30초의 시간이 걸립니다. 이를 기다리게 하기 위해서 time_sleep를 사용하였습니다
+# 더 좋은 방법이 있을꺼 같은데 찾아봐야겠습니다.
+resource "null_resource" "previous" {}
+# sleep 40 seconds
+resource "time_sleep" "wait_40_seconds" {
+  depends_on = [null_resource.previous]
+  create_duration = "40s"
+}
+
+resource "aws_lambda_function" "this" {
+    depends_on = [time_sleep.wait_40_seconds]
+    .....
+}
+```
+
 ## 작업에  도움 주신분
 
 - [신필용](https://www.shinphil.com/kr)
+- [t101 스터디 멤버](http://t101.cloudneta.net)
+    + @지닉-진익현
+    + @ddiiwoong - 김진웅
