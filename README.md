@@ -108,7 +108,7 @@ git push
 - https://github.com/aws-samples/codepipeline-for-lambda-using-terraform
 - https://www.maxivanov.io/deploy-aws-lambda-to-vpc-with-terraform/
 
-## ## 2022.11.12 변경 내역
+## 2022.11.12 변경 내역
 
 - module 간 의존성 추가 처리
 
