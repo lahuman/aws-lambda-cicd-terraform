@@ -130,7 +130,7 @@ module "lambda" {
   ecr_repo_url = module.ecr.ecr_configs.ecr_repo_url
 }
 
-# ./module/lambda/main.tf 에 sleep 삭제 처리
+# ./module/lambda/main.tf 에 sleep 기존 부분 삭제 처리
 # ecr을 생성하고 docker image를 업로드 하는데 약 30초의 시간이 걸립니다. 이를 기다리게 하기 위해서 time_sleep를 사용하였습니다
 # 더 좋은 방법이 있을꺼 같은데 찾아봐야겠습니다.
 resource "null_resource" "previous" {}
