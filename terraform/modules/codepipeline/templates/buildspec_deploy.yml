@@ -1,0 +1,19 @@
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+    commands:
+      - IMAGE_URI=$REPO_URI:latest
+  pre_build:
+    commands:
+      - echo Logging into Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  build:
+    commands:
+      - echo Deploy started on `date`
+      - aws lambda update-function-code --function-name $LAMBDA_FUNC_NAME --image-uri $IMAGE_URI
+      - echo Deploy ended on `date`
+      
